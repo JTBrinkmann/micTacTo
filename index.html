@@ -1,0 +1,159 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta content="text/html; charset=UTF-8" http-equiv="content-type">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>micTacTo</title>
+
+    <style>
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    justify-content: center;
+    align-items: center;
+    font-family: Verdana, "Open Sans", sans-serif;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 5vh;
+    margin-bottom: 2vh;
+}
+
+h1 {
+    font-size: 10vh;
+    text-align: center;
+    margin: 0 0 2vh 0;
+}
+
+.new-game-btn {
+    font-size: 0.8em;
+}
+
+#game {
+    display: flex;
+    flex-wrap: wrap;
+    position: relative;
+    width: 70vh;
+    justify-content: space-between;
+}
+
+.field {
+    flex: 0 0 20vh;
+    height: 20vh;
+    margin-bottom: 5vh;
+    font-size: 10vh;
+}
+.field--X::after { content: "X"; }
+.field--O::after { content: "O"; }
+
+.overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14vh;
+    color: white;
+    text-shadow: 0 0 5px black, 0 0 5px black, 0 0 15px black;
+    background: rgba(255,255,255, 0.7);
+    z-index: 2;
+}
+    </style>
+    <style type="text/stylus">
+
+
+    </style>
+</head>
+<body>
+    <div id="app">
+        Loading…
+    </div>
+
+
+    <!-- main script -->
+    <script type="text/ls">
+
+
+m.mount app,
+controller: ->
+    window.ctrl = ctrl =
+        # event listeners
+        newGameClick: !->
+            # init game variables
+            ctrl.gameover = false
+            ctrl.winner = null
+            ctrl.freeFields = 9
+            ctrl.currPlayer = \X
+            ctrl.fields = [null,null,null,null,null,null,null,null,null]
+
+        fieldClick: !->
+            # set clicked field
+            ctrl.fields[@dataset.field] = ctrl.currPlayer
+
+            # check if game is over
+            # check vertically and horizontally
+            :outerLoop for [dir, mod] in [[1, 3], [3, 1]]
+                for pos from 0 to 2
+                    pos *= dir
+                    console.log "[test]" pos, pos+1*mod, pos+2*mod
+                    if ctrl.fields[pos] and ctrl.fields[pos] == ctrl.fields[pos+1*mod] == ctrl.fields[pos+2*mod]
+                        ctrl.winner = ctrl.fields[pos]
+                        break outerLoop
+
+            # check diagonals
+            if (ctrl.fields.0 == ctrl.fields.4 == ctrl.fields.8) or (ctrl.fields.2 == ctrl.fields.4 == ctrl.fields.6)
+                # it's impossible that a previously found winner is overriden by an empty diagonal math,
+                # as a win necessarily causes neither diagonal to be completely empty
+                ctrl.winner = ctrl.fields.4
+
+            if ctrl.winner or --ctrl.freeFields == 0
+                ctrl.gameover = true
+                return
+
+            # change to next player
+            ctrl.currPlayer = {X: \O, O: \X}[ctrl.currPlayer]
+
+    ctrl.newGameClick!
+    return ctrl
+
+,view: (ctrl) -> [
+    m \h1, "micTacTo"
+    m \.header,
+        m \span.current-player,
+            "Current Player: ", ctrl.currPlayer
+        m \button.new-game-btn,
+            onclick: ctrl.newGameClick
+            "new Game"
+    m \#game,
+        if ctrl.winner
+            m \.overlay, "#{ctrl.winner} won!"
+        else if ctrl.gameover
+            m \.overlay, "draw!"
+        ctrl.fields.map (markedBy, i) ->
+            m \button.field,
+                "data-field": i
+                onclick: ctrl.fieldClick
+                class: if markedBy then "field--#markedBy"
+                disabled: !!markedBy
+]
+
+
+    </script>
+    <!-- libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mithril/0.2.3/mithril.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/livescript/1.4.0/livescript-min.js"></script>
+    <script>/*compile LiveScript*/require('LiveScript').go()</script>
+</body>
+</html>
